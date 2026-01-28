@@ -3,12 +3,9 @@
     private List<PriorityItem> _queue = new();
 
     /// <summary>
-    /// Add a new value to the queue with an associated priority.  The
-    /// node is always added to the back of the queue regardless of 
-    /// the priority.
+    /// Add a new value to the queue with an associated priority. The
+    /// node is always added to the back of the queue no matter priority.
     /// </summary>
-    /// <param name="value">The value</param>
-    /// <param name="priority">The priority</param>
     public void Enqueue(string value, int priority)
     {
         var newNode = new PriorityItem(value, priority);
@@ -17,21 +14,31 @@
 
     public string Dequeue()
     {
-        if (_queue.Count == 0) // Verify the queue is not empty
+        if (_queue.Count == 0)
         {
             throw new InvalidOperationException("The queue is empty.");
         }
 
-        // Find the index of the item with the highest priority to remove
-        var highPriorityIndex = 0;
-        for (int index = 1; index < _queue.Count - 1; index++)
+        // Find the 1st item with the highest priority
+        int maxPriority = _queue[0].Priority;
+        int maxIndex = 0;
+
+        for (int i = 1; i < _queue.Count; i++)
         {
-            if (_queue[index].Priority >= _queue[highPriorityIndex].Priority)
-                highPriorityIndex = index;
+            // Use > to keep the earliest index 
+            if (_queue[i].Priority > maxPriority)
+            {
+                maxPriority = _queue[i].Priority;
+                maxIndex = i;
+            }
+            // If equal, do not update index 
         }
 
-        // Remove and return the item with the highest priority
-        var value = _queue[highPriorityIndex].Value;
+        var value = _queue[maxIndex].Value;
+
+        // Remove the item 
+        _queue.RemoveAt(maxIndex);
+
         return value;
     }
 

@@ -1,4 +1,10 @@
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
 using System.Text.Json;
+
 
 public static class SetsAndMaps
 {
@@ -21,8 +27,36 @@ public static class SetsAndMaps
     /// <param name="words">An array of 2-character words (lowercase, no duplicates)</param>
     public static string[] FindPairs(string[] words)
     {
-        // TODO Problem 1 - ADD YOUR CODE HERE
-        return [];
+        // Put all words into a HashSet
+        HashSet<string> wordSet = new HashSet<string>(words);
+
+        // Use another HashSet to store unique formatted pairs
+        // prevents "am & ma" and "ma & am" from both appearing
+        HashSet<string> pairs = new HashSet<string>();
+
+        foreach (string word in words)
+        {
+            // Compute the reverse 
+            string reverse = $"{word[1]}{word[0]}"; 
+
+            // Skip if it's a palindrome 
+            if (word == reverse) continue;
+
+            // Check if the reverse actually exists in the original list
+            if (wordSet.Contains(reverse))
+            {
+                // Create consistent ordering
+                string pair = word.CompareTo(reverse) < 0
+                    ? $"{word} & {reverse}"
+                    : $"{reverse} & {word}";
+
+                // Add to set
+                pairs.Add(pair);
+            }
+        }
+
+        // Convert back to array and return
+        return pairs.ToArray();
     }
 
     /// <summary>
@@ -39,12 +73,37 @@ public static class SetsAndMaps
     public static Dictionary<string, int> SummarizeDegrees(string filename)
     {
         var degrees = new Dictionary<string, int>();
+
+        // Read the file line by line
         foreach (var line in File.ReadLines(filename))
         {
-            var fields = line.Split(",");
-            // TODO Problem 2 - ADD YOUR CODE HERE
+            // Split the line by commas to get the columns
+            var fields = line.Split(',');
+
+            // Check that there are at least 4 columns as 0-based index 3 is column 4
+            if (fields.Length >= 4)
+            {
+                // Get the degree from column 4 index 3
+                string degree = fields[3].Trim();
+
+                // Only count non-empty degrees
+                if (!string.IsNullOrEmpty(degree))
+                {
+                    // If we've seen this degree before, increment the count
+                    if (degrees.ContainsKey(degree))
+                    {
+                        degrees[degree]++;
+                    }
+                    // First time seeing this degree - start the count at 1
+                    else
+                    {
+                        degrees[degree] = 1;
+                    }
+                }
+            }
         }
 
+        // Return the summary
         return degrees;
     }
 
@@ -64,12 +123,38 @@ public static class SetsAndMaps
     /// Reminder: You can access a letter by index in a string by 
     /// using the [] notation.
     /// </summary>
-    public static bool IsAnagram(string word1, string word2)
+public static bool IsAnagram(string word1, string word2)
     {
-        // TODO Problem 3 - ADD YOUR CODE HERE
-        return false;
-    }
+        // Remove spaces and convert to lowercase
+        string clean1 = new string(word1.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLower();
+        string clean2 = new string(word2.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLower();
 
+        // Different lengths → cannot be anagrams
+        if (clean1.Length != clean2.Length)
+            return false;
+
+        // Count letters in first word
+        var charCount = new Dictionary<char, int>();
+
+        foreach (char c in clean1)
+        {
+            if (charCount.ContainsKey(c))
+                charCount[c]++;
+            else
+                charCount[c] = 1;
+        }
+
+        // Subtract counts from second word
+        foreach (char c in clean2)
+        {
+            if (!charCount.ContainsKey(c) || charCount[c] == 0)
+                return false;
+            charCount[c]--;
+        }
+
+        // we made it here, all counts matched
+        return true;
+    }
     /// <summary>
     /// This function will read JSON (Javascript Object Notation) data from the 
     /// United States Geological Service (USGS) consisting of earthquake data.
@@ -96,11 +181,22 @@ public static class SetsAndMaps
 
         var featureCollection = JsonSerializer.Deserialize<FeatureCollection>(json, options);
 
-        // TODO Problem 5:
-        // 1. Add code in FeatureCollection.cs to describe the JSON using classes and properties 
-        // on those classes so that the call to Deserialize above works properly.
-        // 2. Add code below to create a string out each place a earthquake has happened today and its magitude.
-        // 3. Return an array of these string descriptions.
-        return [];
+        // Process the features
+        var summary = new List<string>();
+
+        foreach (var feature in featureCollection.Features)
+        {
+            var props = feature.Properties;
+
+            // If we have both place and magnitude
+            if (props.Mag.HasValue && !string.IsNullOrWhiteSpace(props.Place))
+            {
+                string entry = $"{props.Place} - Mag {props.Mag.Value:F2}";
+                summary.Add(entry);
+            }
+        }
+
+        // Return as array
+        return summary.ToArray();
     }
 }
